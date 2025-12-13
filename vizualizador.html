@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procesador de Entregas de Banco</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header / Hero -->
+        <header class="hero">
+            <div class="hero-content">
+                <h1>Procesador de Entregas de Banco</h1>
+                <p class="subtitle">Plataforma de análisis y consolidación geotécnica</p>
+            </div>
+            <div style="opacity: 0.8; font-size: 3rem;">📊</div>
+        </header>
+
+        <!-- Main Actions -->
+        <div class="actions-card">
+            <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="loadFile(event)">
+            <label for="fileInput" class="file-label">
+                <span style="font-size: 1.2rem;">📁</span> Cargar Excel
+            </label>
+
+            <button onclick="processData()" id="processBtn" class="btn btn-primary" style="display:none;">
+                <span>⚙️</span> Procesar Datos
+            </button>
+            <button onclick="exportFilteredData()" id="downloadBtn" class="btn btn-outline" style="display:none;">
+                <span>📥</span> Exportar Vista
+            </button>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div id="stats" style="display:none;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Entregas</div>
+                    <div class="stat-value" id="totalEntregas">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Metros Evaluados</div>
+                    <div class="stat-value" id="totalMetros">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Promedio Puntaje FC</div>
+                    <div class="stat-value" id="promedioPuntaje">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Cumplimiento FC</div>
+                    <div class="stat-value" id="cumplimiento">0%</div>
+                </div>
+            </div>
+
+            <!-- Global Filter Panel -->
+            <div class="filter-panel" id="globalFilters" style="margin-bottom: 20px;">
+                <div class="search-box">
+                    <div class="filter-group">
+                        <span class="filter-label">Búsqueda Global</span>
+                        <input type="text" id="searchInput" placeholder="Buscar por ID, fase, banco..."
+                            onkeyup="filterData()">
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Fase</label>
+                    <select id="filterFase" onchange="filterData()">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Banco</label>
+                    <select id="filterBanco" onchange="filterData()">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Cumplimiento</label>
+                    <select id="filterCumple" onchange="filterData()">
+                        <option value="">Todos</option>
+                        <option value="Si">Cumple</option>
+                        <option value="No">No Cumple</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Puntaje Min.</label>
+                    <input type="number" id="filterPuntaje" min="0" max="100" placeholder="0" onchange="filterData()"
+                        style="width: 80px;">
+                </div>
+
+                <div style="margin-top: auto;">
+                    <button class="btn btn-outline" onclick="resetFilters()">Limpiar</button>
+                    <button class="btn btn-primary" onclick="exportFilteredData()">Exportar Vista Actual</button>
+                </div>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div id="tabsContainer" style="display:none;">
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab('datos')">Datos Consolidados</button>
+                    <button class="tab" onclick="showTab('resumen')">Resumen</button>
+                    <button class="tab" onclick="showTab('evaluaciones')">Evaluaciones FC</button>
+                </div>
+
+                <!-- Tab 1: Datos -->
+                <div id="datosTab" class="tab-content active">
+
+
+                    <div id="dataCounter" class="badge badge-success" style="margin-bottom: 1rem; font-size: 0.9em;">
+                    </div>
+
+                    <div class="table-container">
+                        <table id="datosTable"></table>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Resumen -->
+                <div id="resumenTab" class="tab-content">
+                    <div class="filter-panel" style="justify-content: space-between;">
+                        <div>
+                            <h3 style="font-size: 1.1rem; font-weight: 600;">Vista de Resumen</h3>
+                            <p id="summarySubtitle" style="color: var(--text-secondary); font-size: 0.9rem;">Analiza los
+                                datos agrupados</p>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button onclick="showSummaryType('fase')" id="btnFase" class="btn btn-primary">Por
+                                Fase</button>
+                            <button onclick="showSummaryType('banco')" id="btnBanco" class="btn btn-outline">Por
+                                Banco</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="resumenTable"></table>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Evaluaciones -->
+                <div id="evaluacionesTab" class="tab-content">
+                    <div class="table-container">
+                        <table id="evaluacionesTable"></table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading" id="loading">
+        <div style="text-align: center;">
+            <div class="spinner"></div>
+            <p style="margin-top: 1rem; font-weight: 500; color: var(--text-secondary);">Procesando archivo...</p>
+        </div>
+    </div>
+
+
+    <!-- Modal de Exportación -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Exportar Datos</h3>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">Configura las opciones
+                    de tu reporte</p>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Formato de Archivo</label>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="exportFormat" value="excel" checked
+                                onchange="toggleExportOptions()">
+                            <span>Excel (.xlsx)</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="exportFormat" value="csv" onchange="toggleExportOptions()">
+                            <span>CSV</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="exportFormat" value="json" onchange="toggleExportOptions()">
+                            <span>JSON</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" id="excelOptions">
+                    <label class="form-label">Hojas a Incluir</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="checkDatos" checked disabled> <!-- Datos siempre obligatorios -->
+                            <span>Datos Consolidados</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="checkResumen" checked>
+                            <span>Resumen (Fase/Banco)</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="checkEvaluaciones" checked>
+                            <span>Evaluaciones Detalladas</span>
+                        </label>
+
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeExportModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="confirmExport()">Descargar Archivo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Gallery -->
+    <div class="modal-overlay" id="galleryModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 class="modal-title" id="galleryTitle">Imágenes de la Entrega</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">Visualización
+                        de evidencias fotográficas</p>
+                </div>
+                <button onclick="closeGalleryModal()"
+                    style="background:none; border:none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="gallery-grid" id="galleryGrid">
+                    <!-- Images inserted here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeGalleryModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Preview Overlay -->
+    <div class="image-preview-overlay" id="imagePreview" onclick="closeImagePreview()">
+        <button class="close-preview">&times;</button>
+        <div class="image-preview-content">
+            <img id="previewImg" src="" alt="Vista previa">
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+
+</html>
