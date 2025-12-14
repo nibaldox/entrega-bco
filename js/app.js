@@ -1,5 +1,8 @@
 // Cargar automáticamente si hay un archivo disponible
 window.addEventListener('load', async () => {
+    // Inicializar tema
+    initTheme();
+
     // Intentar cargar el archivo si está disponible
     if (window.fs && window.fs.readFile) {
         try {
@@ -16,3 +19,29 @@ window.addEventListener('load', async () => {
         }
     }
 });
+
+// Theme Logic
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeIcon(newTheme);
+}
+
+function updateThemeIcon(theme) {
+    const icon = document.getElementById('themeIcon');
+    if (icon) {
+        icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+}
+
+// Make globally available
+window.toggleTheme = toggleTheme;
