@@ -104,3 +104,15 @@ Para trabajar cómodamente en ambientes con poca luz o simplemente por preferenc
 
 **Soporte Técnico**
 Si encuentra problemas con la visualización de datos, asegúrese de que su archivo Excel cumple con el formato estándar esperado (columnas de Fecha, Banco, Fase, etc.).
+
+---
+
+## 🛠️ Solución de Problemas (GitHub Pages)
+
+Si al intentar activar GitHub Pages te solicita un **"Dominio Verificado"**, sigue estos pasos:
+
+1.  Ve a **Settings > Pages**.
+2.  En **"Build and deployment"**, asegúrate de que **Source** sea **"Deploy from a branch"**.
+3.  Selecciona la rama `master` y guarda.
+4.  **IMPORTANTE**: Deja el campo **"Custom domain"** completamente **VACÍO**. No es necesario para usar la versión gratuita.
+
